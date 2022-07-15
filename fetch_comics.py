@@ -46,7 +46,7 @@ def save_image_to_vk(method: str, payload: dict):
 if __name__ == "__main__":
     load_dotenv()
     VK_TOKEN = str(os.getenv("VK_TOKEN"))
-    # print(fetch_comics(353))
+    comics_info = fetch_comics(353)
     user_groups = fetch_from_vk(
         method="groups.get", 
         payload={
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         }
     )
     vk_upload_info = get_vk_upload_info(url_uploadserver["upload_url"])
-    print(save_image_to_vk(
+    image_info = save_image_to_vk(
         method="photos.saveWallPhoto",
         payload={
             "access_token": VK_TOKEN,
@@ -73,5 +73,19 @@ if __name__ == "__main__":
             "photo": vk_upload_info["photo"],
             "hash": vk_upload_info["hash"]
         }
-    ))
-
+    )
+    image_owner_id = image_info['response'][0]['owner_id']
+    image_id = image_info['response'][0]['id']
+    posted_image = save_image_to_vk(
+        method="wall.post",
+        payload={
+            "access_token": VK_TOKEN,
+            "v": 5.131,
+            "owner_id": -214532128,
+            "from_group": 1,
+            "attachments": [
+                f"photo{image_owner_id}_{image_id}", 
+            ],
+            "message": f"{comics_info}"
+        }
+    )
