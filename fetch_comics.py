@@ -97,3 +97,4 @@ if __name__ == "__main__":
             "message": f"{comics_info['comment']}"
         }
     )
+    remove_image_file = os.remove(comics_info["image_file"])
