@@ -15,21 +15,63 @@ def fetch_comics(comics_id: int) -> None:
     return author_comment
 
 
-def test_vk(method: str, token: str) -> str:
+def fetch_from_vk(method: str, payload: dict):
     url = f"https://api.vk.com/method/{method}"
-    payload = {
-        "access_token": token,
-        "v": 5.131
-    }
     response = requests.get(url, params=payload)
     response.raise_for_status()
-    vk_info = response.json()
+    vk_info = response.json()["response"]
     return vk_info
    
+
+def get_vk_upload_info(url: str) -> dict:
+    with open('python.png', 'rb') as file:
+        files = {
+            'photo': file
+        }
+        response = requests.post(url, files=files)
+        response.raise_for_status()
+    vk_upload_info = response.json()
+    return vk_upload_info
+
+
+def save_image_to_vk(method: str, payload: dict):
+    response = requests.post(
+        url = f"https://api.vk.com/method/{method}",
+        params=payload,
+    )
+    response.raise_for_status()
+    return response.json()
+
 
 if __name__ == "__main__":
     load_dotenv()
     VK_TOKEN = str(os.getenv("VK_TOKEN"))
     # print(fetch_comics(353))
-    print(VK_TOKEN)
-    print(test_vk(method="groups.get", token=VK_TOKEN))
+    user_groups = fetch_from_vk(
+        method="groups.get", 
+        payload={
+            "access_token": VK_TOKEN,
+            "v": 5.131
+        }
+    )
+    url_uploadserver = fetch_from_vk(
+        method="photos.getWallUploadServer", 
+        payload={
+            "access_token": VK_TOKEN,
+            "group_id": 214532128,
+            "v": 5.131
+        }
+    )
+    vk_upload_info = get_vk_upload_info(url_uploadserver["upload_url"])
+    print(save_image_to_vk(
+        method="photos.saveWallPhoto",
+        payload={
+            "access_token": VK_TOKEN,
+            "v": 5.131,
+            "group_id": 214532128,
+            "server": vk_upload_info["server"],
+            "photo": vk_upload_info["photo"],
+            "hash": vk_upload_info["hash"]
+        }
+    ))
+
