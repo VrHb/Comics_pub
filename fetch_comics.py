@@ -1,3 +1,4 @@
+import random
 import os
 
 from dotenv import load_dotenv
@@ -5,14 +6,19 @@ from dotenv import load_dotenv
 import requests
 
 
-def fetch_comics(comics_id: int) -> None:
+def fetch_comics(comics_id: int) -> dict:
     response = requests.get(
         url=f"https://xkcd.com/{comics_id}/info.0.json"
     )
     response.raise_for_status()
     image_url = response.json()["img"]
+    image_file = os.path.basename(image_url)
+    get_image_response = requests.get(image_url)
+    get_image_response.raise_for_status()
+    with open(image_file, "wb") as file:   
+        file.write(get_image_response.content)
     author_comment = response.json()["alt"]
-    return author_comment
+    return {"comment": author_comment, "image_file": image_file} 
 
 
 def fetch_from_vk(method: str, payload: dict):
@@ -23,11 +29,9 @@ def fetch_from_vk(method: str, payload: dict):
     return vk_info
    
 
-def get_vk_upload_info(url: str) -> dict:
-    with open('python.png', 'rb') as file:
-        files = {
-            'photo': file
-        }
+def get_vk_upload_info(url: str, image_file: str) -> dict:  
+    with open(image_file, 'rb') as file:
+        files = {'photo': file}
         response = requests.post(url, files=files)
         response.raise_for_status()
     vk_upload_info = response.json()
@@ -46,7 +50,8 @@ def save_image_to_vk(method: str, payload: dict):
 if __name__ == "__main__":
     load_dotenv()
     VK_TOKEN = str(os.getenv("VK_TOKEN"))
-    comics_info = fetch_comics(353)
+    random_comics_id = random.choice(range(1, 2645))
+    comics_info = fetch_comics(random_comics_id)
     user_groups = fetch_from_vk(
         method="groups.get", 
         payload={
@@ -62,7 +67,10 @@ if __name__ == "__main__":
             "v": 5.131
         }
     )
-    vk_upload_info = get_vk_upload_info(url_uploadserver["upload_url"])
+    vk_upload_info = get_vk_upload_info(
+        url_uploadserver["upload_url"],
+        image_file=comics_info["image_file"]
+    )
     image_info = save_image_to_vk(
         method="photos.saveWallPhoto",
         payload={
@@ -86,6 +94,6 @@ if __name__ == "__main__":
             "attachments": [
                 f"photo{image_owner_id}_{image_id}", 
             ],
-            "message": f"{comics_info}"
+            "message": f"{comics_info['comment']}"
         }
     )
