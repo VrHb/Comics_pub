@@ -29,8 +29,8 @@ def get_from_vk(method: str, payload: dict):
     return vk_data
 
 
-def post_vk_upload_data(url: str, image_file: str) -> dict:
-    with open(image_file, 'rb') as file:
+def post_vk_upload_data(url: str, filename: str) -> dict:
+    with open(filename, 'rb') as file:
         files = {'photo': file}
         response = requests.post(url, files=files)
         response.raise_for_status()
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     )
     vk_upload_data = post_vk_upload_data(
         vk_uploadserver_data["upload_url"],
-        image_file=comics_data["image_file"]
+        filename=comics_data["image_file"]
     )
     vk_image_data = post_to_vk(
         method="photos.saveWallPhoto",
