@@ -22,10 +22,7 @@ pip install -r requirements.txt
 touch .env
 ```
 * [Регистрируем приложение VK](https://vk.com/dev) и получаем ключ приложения для использования API VK
-по этой [ссыслке](https://vk.com/dev/implicit_flow_user), записываем его в .env файл:
-```
-echo CLIENT_ID='id вашего приложения' >> .env
-```
+по этой [ссыслке](https://vk.com/dev/implicit_flow_user), записываем в .env файл:
 ```
 echo "VK_TOKEN='ваш ключ'" >> .env
 ```
