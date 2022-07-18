@@ -13,10 +13,10 @@ def fetch_xkcd(comics_id: int) -> dict:
     response.raise_for_status()
     image_url = response.json()["img"]
     image_file = os.path.basename(image_url)
-    get_image_response = requests.get(image_url)
-    get_image_response.raise_for_status()
+    image_response = requests.get(image_url)
+    image_response.raise_for_status()
     with open(image_file, "wb") as file:
-        file.write(get_image_response.content)
+        file.write(image_response.content)
     author_comment = response.json()["alt"]
     return {"comment": author_comment, "image_file": image_file}
 
