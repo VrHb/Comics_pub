@@ -65,47 +65,49 @@ def check_vk_errors(vk_response_params: dict) -> dict:
 
 
 if __name__ == "__main__":
-    load_dotenv()
-    VK_TOKEN = str(os.getenv("VK_TOKEN"))
-    VK_GROUP_ID = int(os.getenv("VK_GROUP_ID"))
-    random_comics_id = random.choice(range(FIRST_COMICS, COUNTED_COMICS))
-    comics_information = fetch_xkcd(random_comics_id)
-    vk_upload_server_params = check_vk_errors(get_from_vk(
-        method="photos.getWallUploadServer",
-        payload={
-            "access_token": VK_TOKEN,
-            "group_id": VK_GROUP_ID,
-            "v": VK_API_VERSION
-        }
-    ))
-    vk_server_params = check_vk_errors(post_image_to_vkserver(
-        vk_upload_server_params["upload_url"],
-        filename=comics_information["image_file"]
-    ))
-    vk_saved_image_params = post_to_vk(
-        method="photos.saveWallPhoto",
-        payload={
-            "access_token": VK_TOKEN,
-            "v": VK_API_VERSION,
-            "group_id": VK_GROUP_ID,
-            "server": vk_server_params["server"],
-            "photo": vk_server_params["photo"],
-            "hash": vk_server_params["hash"]
-        }
-    )["response"][0]
-    image_owner_id = vk_saved_image_params['owner_id']
-    image_id = vk_saved_image_params['id']
-    check_vk_errors(post_to_vk(
-        method="wall.post",
-        payload={
-            "access_token": VK_TOKEN,
-            "v": VK_API_VERSION,
-            "owner_id": -(VK_GROUP_ID),
-            "from_group": 1,
-            "attachments": [
-                f"photo{image_owner_id}_{image_id}",
-            ],
-            "message": f"{comics_information['comment']}"
-        }
-    ))
-    removed_image_file = os.remove(comics_information["image_file"])
+    try:
+        load_dotenv()
+        VK_TOKEN = str(os.getenv("VK_TOKEN"))
+        VK_GROUP_ID = int(os.getenv("VK_GROUP_ID"))
+        random_comics_id = random.choice(range(FIRST_COMICS, COUNTED_COMICS))
+        comics_information = fetch_xkcd(random_comics_id)
+        vk_upload_server_params = check_vk_errors(get_from_vk(
+            method="photos.getWallUploadServer",
+            payload={
+                "access_token": VK_TOKEN,
+                "group_id": VK_GROUP_ID,
+                "v": VK_API_VERSION
+            }
+        ))
+        vk_server_params = check_vk_errors(post_image_to_vkserver(
+            vk_upload_server_params["upload_url"],
+            filename=comics_information["image_file"]
+        ))
+        vk_saved_image_params = post_to_vk(
+            method="photos.saveWallPhoto",
+            payload={
+                "access_token": VK_TOKEN,
+                "v": VK_API_VERSION,
+                "group_id": VK_GROUP_ID,
+                "server": vk_server_params["server"],
+                "photo": vk_server_params["photo"],
+                "hash": vk_server_params["hash"]
+            }
+        )["response"][0]
+        image_owner_id = vk_saved_image_params['owner_id']
+        image_id = vk_saved_image_params['id']
+        check_vk_errors(post_to_vk(
+            method="wall.post",
+            payload={
+                "access_token": VK_TOKEN,
+                "v": VK_API_VERSION,
+                "owner_id": -(VK_GROUP_ID),
+                "from_group": 1,
+                "attachments": [
+                    f"photo{image_owner_id}_{image_id}",
+                ],
+                "message": f"{comics_information['comment']}"
+            }
+        ))
+    finally:
+        removed_image_file = os.remove(comics_information["image_file"])
