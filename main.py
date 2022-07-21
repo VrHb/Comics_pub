@@ -8,6 +8,7 @@ import requests
 
 COUNTED_COMICS = 2647
 FIRST_COMICS = 1
+VK_API_VERSION = 5.131
 
 class VKWrongDataException(Exception):
     pass 
@@ -69,27 +70,27 @@ if __name__ == "__main__":
     VK_GROUP_ID = int(os.getenv("VK_GROUP_ID"))
     random_comics_id = random.choice(range(FIRST_COMICS, COUNTED_COMICS))
     comics_information = fetch_xkcd(random_comics_id)
-    vk_uploadserver_params = check_vk_errors(get_from_vk(
+    vk_upload_server_params = check_vk_errors(get_from_vk(
         method="photos.getWallUploadServer",
         payload={
             "access_token": VK_TOKEN,
             "group_id": VK_GROUP_ID,
-            "v": 5.131
+            "v": VK_API_VERSION
         }
     ))
-    vkserver_params = check_vk_errors(post_image_to_vkserver(
-        vk_uploadserver_params["upload_url"],
+    vk_server_params = check_vk_errors(post_image_to_vkserver(
+        vk_upload_server_params["upload_url"],
         filename=comics_information["image_file"]
     ))
     vk_saved_image_params = post_to_vk(
         method="photos.saveWallPhoto",
         payload={
             "access_token": VK_TOKEN,
-            "v": 5.131,
+            "v": VK_API_VERSION,
             "group_id": VK_GROUP_ID,
-            "server": vkserver_params["server"],
-            "photo": vkserver_params["photo"],
-            "hash": vkserver_params["hash"]
+            "server": vk_server_params["server"],
+            "photo": vk_server_params["photo"],
+            "hash": vk_server_params["hash"]
         }
     )["response"][0]
     image_owner_id = vk_saved_image_params['owner_id']
@@ -98,7 +99,7 @@ if __name__ == "__main__":
         method="wall.post",
         payload={
             "access_token": VK_TOKEN,
-            "v": 5.131,
+            "v": VK_API_VERSION,
             "owner_id": -(VK_GROUP_ID),
             "from_group": 1,
             "attachments": [
