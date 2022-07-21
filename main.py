@@ -9,26 +9,31 @@ import requests
 COUNTED_COMICS = 2647
 FIRST_COMICS = 1
 
+class VKWrongDataException(Exception):
+    pass 
+
+
 def fetch_xkcd(comics_id: int) -> dict:
     response = requests.get(
         url=f"https://xkcd.com/{comics_id}/info.0.json"
     )
     response.raise_for_status()
     image_url = response.json()["img"]
-    image_file = os.path.basename(image_url)
+    filename = os.path.basename(image_url)
     image_response = requests.get(image_url)
     image_response.raise_for_status()
-    with open(image_file, "wb") as file:
+    with open(filename, "wb") as file:
         file.write(image_response.content)
     author_comment = response.json()["alt"]
-    return {"comment": author_comment, "image_file": image_file}
+    return {"comment": author_comment, "image_file": filename}
 
 
-def get_from_vk(method: str, payload: dict):
+def get_from_vk(method: str, payload: dict) -> dict:
     url = f"https://api.vk.com/method/{method}"
     response = requests.get(url, params=payload)
     response.raise_for_status()
-    return response.json()["response"]
+    response_params = response.json()
+    return response_params["response"]
 
 
 def post_image_to_vkserver(url: str, filename: str) -> dict:
@@ -39,13 +44,23 @@ def post_image_to_vkserver(url: str, filename: str) -> dict:
     return response.json()
 
 
-def post_to_vk(method: str, payload: dict):
+def post_to_vk(method: str, payload: dict) -> dict:
     response = requests.post(
         url = f"https://api.vk.com/method/{method}",
         params=payload,
     )
     response.raise_for_status()
-    return response.json()
+    response_params = response.json()
+    return response_params
+
+
+def check_vk_errors(vk_response_params: dict) -> dict:
+    if vk_response_params.get("error"):
+        raise VKWrongDataException(
+            f"Код ошибки: {vk_response_params['error']['error_code']}",
+            f"Текст ошибки: {vk_response_params['error']['error_msg']}"
+        )
+    return vk_response_params
 
 
 if __name__ == "__main__":
@@ -54,18 +69,18 @@ if __name__ == "__main__":
     VK_GROUP_ID = int(os.getenv("VK_GROUP_ID"))
     random_comics_id = random.choice(range(FIRST_COMICS, COUNTED_COMICS))
     comics_information = fetch_xkcd(random_comics_id)
-    vk_uploadserver_params = get_from_vk(
+    vk_uploadserver_params = check_vk_errors(get_from_vk(
         method="photos.getWallUploadServer",
         payload={
             "access_token": VK_TOKEN,
             "group_id": VK_GROUP_ID,
             "v": 5.131
         }
-    )
-    vkserver_params = post_image_to_vkserver(
+    ))
+    vkserver_params = check_vk_errors(post_image_to_vkserver(
         vk_uploadserver_params["upload_url"],
         filename=comics_information["image_file"]
-    )
+    ))
     vk_saved_image_params = post_to_vk(
         method="photos.saveWallPhoto",
         payload={
@@ -79,7 +94,7 @@ if __name__ == "__main__":
     )["response"][0]
     image_owner_id = vk_saved_image_params['owner_id']
     image_id = vk_saved_image_params['id']
-    post_to_vk(
+    check_vk_errors(post_to_vk(
         method="wall.post",
         payload={
             "access_token": VK_TOKEN,
@@ -91,5 +106,5 @@ if __name__ == "__main__":
             ],
             "message": f"{comics_information['comment']}"
         }
-    )
+    ))
     removed_image_file = os.remove(comics_information["image_file"])
